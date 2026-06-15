@@ -17,6 +17,16 @@ pub trait Transport: embedded_io::ErrorType {
     fn write<T: HostToControllerPacket>(&self, val: &T) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
+impl<'a, T: Transport> Transport for &'a mut T {
+    fn read<'buf>(&self, rx: &'buf mut [u8]) -> impl Future<Output = Result<ControllerToHostPacket<'buf>, Self::Error>> {
+        (**self).read(rx)
+    }
+
+    fn write<P: HostToControllerPacket>(&self, val: &P) -> impl Future<Output = Result<(), Self::Error>> {
+        (**self).write(val)
+    }
+}
+
 /// HCI transport layer for a split serial bus using the UART transport layer protocol [📖](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/host-controller-interface/uart-transport-layer.html)
 pub struct SerialTransport<M: RawMutex, R, W> {
     reader: Mutex<M, R>,
